@@ -1,9 +1,11 @@
+import User from '../schemas/user';
+
 var express = require('express');
 var router = express.Router();
 
-/* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
+router.get('/', async function(req, res, next) {
+  let allUsers = await User.find().exec();
+  return allUsers;
 });
 
 module.exports = router;

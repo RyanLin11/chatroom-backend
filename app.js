@@ -3,11 +3,12 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const mongoose = require('mongoose');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+var authRouter = require('./routes/auth');
 var channelsRouter = require('./routes/channels');
 var commentsRouter = require('./routes/comments');
+var usersRouter = require('./routes/users');
 
 var app = express();
 
@@ -16,10 +17,24 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/auth', authRouter);
 app.use('/channels', channelsRouter);
 app.use('/comments', commentsRouter);
+app.use('/users', usersRouter);
+
+mongoose.connect(process.env.MONGODB_URL);
+
+let session = require('express-session');
+const MongoStore = require('connect-mongo');
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: true,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URL,
+  })
+  // cookie: {secure: true}
+}));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
