@@ -3,8 +3,12 @@ const express = require('express');
 const router = express.Router();
 
 router.get('/', async function(req, res, next) {
-  let allUsers = await User.find().exec();
-  return allUsers;
+  try {
+    let allUsers = await User.find().exec();
+    res.send(allUsers);
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = router;

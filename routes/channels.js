@@ -7,7 +7,11 @@ const router = express.Router();
 router.use(isAuthenticated);
 
 router.get('/', async function (req, res, next) {
-    return res.locals.user.channels;
+    try {
+        res.send(res.locals.user.channels);
+    } catch (err) {
+        next(err);
+    }
 });
 
 router.post('/', async function (req, res, next) {

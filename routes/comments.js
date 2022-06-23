@@ -6,8 +6,12 @@ const router = express.Router();
 router.use(isAuthenticated);
 
 router.get('/', async function (req, res, next) {
-    let comments = await Comment.find({channel: req.params.channel}).exec();
-    res.send(comments);
+    try {
+        let comments = await Comment.find({channel: req.params.channel}).exec();
+        res.send(comments);
+    } catch (err) {
+        next(err);
+    }
 });
 
 router.post('/', async function (req, res, next) {
