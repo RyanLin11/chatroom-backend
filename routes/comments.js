@@ -1,8 +1,7 @@
-import Comment from '../schemas/user';
-import { isAuthenticated } from '../utils/auth';
-
-var express = require('express');
-var router = express.Router();
+const Comment = require('../schemas/user');
+const { isAuthenticated } = require('../utils/auth');
+const express = require('express');
+const router = express.Router();
 
 router.use(isAuthenticated);
 

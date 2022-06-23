@@ -1,24 +1,24 @@
-import User from '../schemas/user';
-import { isAuthenticated } from '../utils/auth';
-
-var express = require('express');
-var router = express.Router();
-
-let bcrypt = require('bcrypt');
+const createError = require('http-errors');
+const User = require('../schemas/user');
+const { isAuthenticated } = require('../utils/auth');
+const express = require('express');
+const bcrypt = require('bcrypt');
+const router = express.Router();
+const saltRounds = 10;
 
 router.post('/register', async function (req, res, next) {
     try {
         const hashedPassword = await new Promise((resolve, reject) => {
-            bcrypt.hash(req.body.password, saltRounds, function(err, hash) {
+            bcrypt.hash(req.body.password, saltRounds, (err, hash) => {
                 if (err) {
-                    reject(err);
+                    reject(createError(400, err));
                 } else {
                     resolve(hash);
                 }
             });
         });
         let newUser = await new User({
-            username: body.username,
+            username: req.body.username,
             password: hashedPassword,
         }).save();
         res.send(newUser);
@@ -31,7 +31,7 @@ router.post('/login', async function (req, res, next) {
     try {
         const user = await User.findOne({username: req.body.username}).exec();
         if (!user) {
-            throw new Error('User not found');
+            throw createError(400, 'User not found');
         }
         const result = await new Promise((resolve, reject) => {
             bcrypt.compare(req.body.password, user.password, function(err, result) {
@@ -43,27 +43,9 @@ router.post('/login', async function (req, res, next) {
             });
         });
         if (!result) {
-            throw new Error('Incorrect Password');
+            throw createError(401, 'Incorrect Username or Password');
         }
-        await new Promise((resolve, reject) => {
-            req.session.regenerate(function(err) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        });
         req.session.user = user._id;
-        await new Promise((resolve, reject) => {
-            req.session.save(function (err) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        });
         res.send(user);
     } catch(err) {
         return next(err);
@@ -74,7 +56,7 @@ router.get('/logout', isAuthenticated, async function (req, res, next) {
     try {
         req.session.user = null;
         await new Promise((resolve, reject) => {
-            req.session.save(function (err) {
+            req.session.save((err) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -83,7 +65,7 @@ router.get('/logout', isAuthenticated, async function (req, res, next) {
             });
         });
         await new Promise((resolve, reject) => {
-            req.session.regenerate(function(err) {
+            req.session.regenerate((err) => {
                 if (err) {
                     reject(err);
                 } else {

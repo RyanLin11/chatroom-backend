@@ -1,7 +1,6 @@
-import User from '../schemas/user';
-
-var express = require('express');
-var router = express.Router();
+const User = require('../schemas/user');
+const express = require('express');
+const router = express.Router();
 
 router.get('/', async function(req, res, next) {
   let allUsers = await User.find().exec();

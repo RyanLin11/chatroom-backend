@@ -1,14 +1,13 @@
-import Channel from '../schemas/channel';
-import User from '../schemas/user';
-import { isAuthenticated } from '../utils/auth';
-
-var express = require('express');
-var router = express.Router();
+const Channel = require('../schemas/channel');
+const User = require('../schemas/user');
+const { isAuthenticated } = require('../utils/auth');
+const express = require('express');
+const router = express.Router();
 
 router.use(isAuthenticated);
 
 router.get('/', async function (req, res, next) {
-    return req.locals.user.channels;
+    return res.locals.user.channels;
 });
 
 router.post('/', async function (req, res, next) {
@@ -38,9 +37,9 @@ router.post('/:channelId/add', async function(req, res, next) {
 router.post('/:channelId/leave', async function(req, res, next) {
     try {
         let channel = await Channel.findById(req.params.channelId);
-        channel.participants = channel.participants.filter(member => member != req.locals.user._id);
-        req.locals.user.channels = req.locals.user.channels.filter(group => group != channel._id);
-        await req.locals.user.save();
+        channel.participants = channel.participants.filter(member => member != res.locals.user._id);
+        res.locals.user.channels = res.locals.user.channels.filter(group => group != channel._id);
+        await res.locals.user.save();
         if (channel.participants.length == 0) {
             await Channel.findByIdAndDelete(channel._id);
         } else {
