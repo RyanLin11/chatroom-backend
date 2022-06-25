@@ -29,7 +29,7 @@ router.post('/register', async function (req, res, next) {
 
 router.post('/login', async function (req, res, next) {
     try {
-        const user = await User.findOne({username: req.body.username}).exec();
+        const user = await User.findOne({username: req.body.username}).populate({path: 'channels', populate: {path: 'participants'}}).exec();
         if (!user) {
             throw createError(400, 'User not found');
         }

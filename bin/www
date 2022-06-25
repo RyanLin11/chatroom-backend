@@ -7,6 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('chat-backend:server');
 var http = require('http');
+var { io } = require('../utils/socketApi');
 
 /**
  * Get port from environment and store in Express.
@@ -20,6 +21,13 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+io.attach(server, {
+  cors: {
+      origin: 'http://localhost:3000',
+      credentials: true,
+      methods: ['GET', 'POST']
+  }
+});
 
 /**
  * Listen on provided port, on all network interfaces.

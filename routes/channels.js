@@ -18,6 +18,11 @@ router.post('/', async function (req, res, next) {
     try {
         let channel = new Channel(req.body);
         channel = await channel.save();
+        for (const member of channel.participants) {
+            const user = await User.findById(member).exec();
+            user.channels.push(channel._id);
+            await user.save();
+        }
         res.send(channel);
     } catch (err) {
         next(err);
