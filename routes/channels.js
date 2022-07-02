@@ -1,59 +1,93 @@
+const createError = require('http-errors');
 const Channel = require('../schemas/channel');
-const User = require('../schemas/user');
 const { isAuthenticated } = require('../utils/auth');
 const express = require('express');
+const User = require('../schemas/user');
+const Message = require('../schemas/message');
 const router = express.Router();
+const validator = require('../validation/validator');
+const { channelSchema } = require('../validation/channels');
+const { io } = require('../utils/socketApi');
 
 router.use(isAuthenticated);
 
-router.get('/', async function (req, res, next) {
-    try {
-        res.send(res.locals.user.channels);
-    } catch (err) {
-        next(err);
-    }
-});
-
-router.post('/', async function (req, res, next) {
-    try {
-        let channel = new Channel(req.body);
-        channel = await channel.save();
-        for (const member of channel.participants) {
-            const user = await User.findById(member).exec();
-            user.channels.push(channel._id);
-            await user.save();
+router.route('/')
+    .get(async (req, res, next) => {
+        try {
+            await req.user.channels.populate('participants');
+            res.send(req.user.channels);
+        } catch(err) {
+            next(err);
         }
-        res.send(channel);
+    })
+    .post(validator(channelSchema), async (req, res, next) => {
+        try {
+            let channel = new Channel(req.body);
+            channel = await channel.save();
+            await User.updateMany({'_id': { $in: channel.participants }}, { $push: { channels: channel._id }});
+            await channel.populate('participants');
+            const participant_ids = channel.participants.map(participant => participant._id.toString());
+            io.to(participant_ids).emit('add-channel', channel);
+            res.send(channel);
+        } catch (err) {
+            next(err);
+        }
+    });
+
+router.param('channelId', async (req, res, next) => {
+    try {
+        req.channel = await Channel.findById(req.params.channelId);
+        if (req.channel) {
+            next();
+        } else {
+            next(createError(400, 'Channel not found'));
+        }
     } catch (err) {
         next(err);
     }
 });
 
-router.post('/:channelId/add', async function(req, res, next) {
+router.route('/:channelId')
+    .get(async (req, res, next) => {
+        try {
+            await req.channel.populate('participants');
+            res.send(req.channel);
+        } catch (err) {
+            next(err);
+        }
+    })
+    .delete(async (req, res, next) => {
+        try {
+            if (req.user._id === req.channel.admin || req.user.role === 'Admin') {
+                const deleted_channel = await Channel.findByIdAndDelete(req.params.channelId);
+                await User.updateMany({ '_id': { $in: deleted_channel.participants } }, { $pull: { channels: req.params.channelId } });
+                res.sendStatus(200);
+            } else {
+                throw createError(403, 'You do not have permissions to delete this channel.');
+            }
+        } catch (err) {
+            next(err);
+        }
+    });
+
+router.post('/:channelId/join', async (req, res, next) => {
     try {
-        let channel = await Channel.findById(req.params.channelId);
-        let newMember = await User.findById(req.query.user);
-        channel.participants.push(newMember._id);
-        newMember.push(channel._id);
-        await channel.save();
-        await newMember.save();
+        await Channel.findByIdAndUpdate(req.params.channelId, { $addToSet: { participants: req.user._id }});
+        await User.findByIdAndUpdate(req.user._id, { $addToSet: { channels: req.params.channelId }});
         res.sendStatus(200);
     } catch (err) {
         next(err);
     }
-});
+})
 
-router.post('/:channelId/leave', async function(req, res, next) {
+router.post('/:channelId/leave', async (req, res, next) => {
     try {
-        let channel = await Channel.findById(req.params.channelId);
-        channel.participants = channel.participants.filter(member => member != res.locals.user._id);
-        res.locals.user.channels = res.locals.user.channels.filter(group => group != channel._id);
-        await res.locals.user.save();
-        if (channel.participants.length == 0) {
-            await Channel.findByIdAndDelete(channel._id);
-        } else {
-            await channel.save();
+        await Channel.findByIdAndUpdate(req.params.channelId, { $pull: { participants: req.user._id }});
+        await User.findByIdAndUpdate(req.user._id, { $pull: { channels: req.params.channelId } });
+        if (req.channel.participants.length == 0) {
+            await Channel.findByIdAndDelete(req.channel._id);
         }
+        await Message.deleteMany({sender: req.user._id, channel: req.params.channelId});
         res.sendStatus(200);
     } catch (err) {
         next(err);

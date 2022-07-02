@@ -4,7 +4,7 @@ const User = require('../schemas/user');
 async function isAuthenticated (req, res, next) {
     if (req.session.user) {
         const user = await User.findById(req.session.user);
-        res.locals.user = user;
+        req.user = user;
         next();
     } else {
         next(createError(403, 'Authentication Failed'));

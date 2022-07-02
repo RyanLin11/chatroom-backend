@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const ObjectId = mongoose.Schema.Types.ObjectId;
 
-const CommentSchema = new mongoose.Schema({
+const MessageSchema = new mongoose.Schema({
     channel: {
         type: ObjectId,
         ref: 'Channel',
@@ -23,6 +23,6 @@ const CommentSchema = new mongoose.Schema({
     },
 });
 
-const Comment = mongoose.model("Comment", CommentSchema);
+const Message = mongoose.model("Message", MessageSchema);
 
-module.exports = Comment;
+module.exports = Message;

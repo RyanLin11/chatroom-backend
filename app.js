@@ -35,7 +35,7 @@ app.use(session({
 
 const authRouter = require('./routes/auth');
 const channelsRouter = require('./routes/channels');
-const commentsRouter = require('./routes/comments');
+const commentsRouter = require('./routes/messages');
 const usersRouter = require('./routes/users');
 
 app.use('/auth', authRouter);
