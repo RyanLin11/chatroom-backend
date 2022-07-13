@@ -1,33 +1,17 @@
+const createError = require('http-errors');
+const MessageController = require('../controllers/MessageController');
 const { messageSchema, updateMessageSchema } = require('../validation/messages');
 const validate = require('../validation/validator');
-const createError = require('http-errors');
-const Message = require('../schemas/message');
 const { isAuthenticated } = require('../utils/auth');
 const express = require('express');
 const router = express.Router();
+const Message = require('../schemas/message');
 
 router.use(isAuthenticated);
 
 router.route('/')
-    .get(async (req, res, next) => {
-        try {
-            let messages = await Message.find({channel: req.query.channel}).populate('sender').exec();
-            res.send(messages);
-        } catch (err) {
-            next(err);
-        }
-    })
-    .post(validate(messageSchema), async (req, res, next) => {
-        req.body.sender = req.user._id;
-        try {
-            let message = new Message(req.body);
-            message = await message.save();
-            await message.populate('sender');
-            res.status(201).send(message);
-        } catch (err) {
-            next(err);
-        }
-    });
+    .get(MessageController.getMessages)
+    .post(validate(messageSchema), MessageController.createMessage);
 
 router.param('messageId', async (req, res, next, id) => {
     try {
@@ -42,30 +26,8 @@ router.param('messageId', async (req, res, next, id) => {
 });
 
 router.route('/:messageId')
-    .get((req, res, next) => {
-        res.send(req.message);
-    })
-    .put(validate(updateMessageSchema), async (req, res, next) => {
-        if (req.user._id !== req.message.sender && req.user.role !== 'Admin') {
-            throw createError(403, "Cannot modify another user's message");
-        }
-        try {
-            let updated_message = await Message.findByIdAndUpdate(req.params.messageId, req.body);
-            res.send(updated_message);
-        } catch (err) {
-            next(err);
-        }
-    })
-    .delete(async (req, res, next) => {
-        if (req.user._id !== req.message.sender && req.user.role !== 'Admin') {
-            throw createError(403, "Cannot delete another user's message");
-        }
-        try {
-            await Message.findByIdAndDelete(req.params.messageId);
-            res.sendStatus(200);
-        } catch (err) {
-            next(err);
-        }
-    });
+    .get(MessageController.getMessage)
+    .put(MessageController.editMessage)
+    .delete(MessageController.deleteMessage);
 
 module.exports = router;
