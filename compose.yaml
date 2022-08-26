@@ -1,0 +1,22 @@
+services:
+  chat-backend:
+    container_name: chat_backend
+    image: node:18
+    working_dir: /usr/src/app
+    volumes:
+    - type: bind
+      source: .
+      target: /usr/src/app
+      consistency: cached
+    - chat_backend_node_modules:/usr/src/app/node_modules
+    ports:
+    - "9000:9000"
+    environment:
+      PORT: 9000
+    env_file:
+    - ./.env
+    command: bash -c "npm i -g nodemon && nodemon ./bin/www"
+
+volumes:
+  chat_backend_node_modules:
+    external: true

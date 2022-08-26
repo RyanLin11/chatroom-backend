@@ -35,12 +35,12 @@ app.use(session({
 
 const authRouter = require('./routes/auth');
 const channelsRouter = require('./routes/channels');
-const commentsRouter = require('./routes/messages');
+const messagesRouter = require('./routes/messages');
 const usersRouter = require('./routes/users');
 
 app.use('/auth', authRouter);
 app.use('/channels', channelsRouter);
-app.use('/comments', commentsRouter);
+app.use('/messages', messagesRouter);
 app.use('/users', usersRouter);
 
 mongoose.connect(process.env.MONGODB_URL);
