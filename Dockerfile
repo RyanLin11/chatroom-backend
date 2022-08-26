@@ -8,6 +8,6 @@ RUN npm install
 
 COPY . ./
 
-RUN npm install -g pm2
+EXPOSE 8080
 
-CMD ["pm2", "start", "./bin/www"]
+CMD ["node", "./bin/www"]

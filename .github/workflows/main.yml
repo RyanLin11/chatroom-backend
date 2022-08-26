@@ -2,18 +2,14 @@ name: Fly Deploy
 on:
   push:
     branches:
-    - master
+    - main
   pull_request:
     branches:
-    - master
+    - main
   workflow_dispatch:
 
 env:
   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-  FRONTEND_URL: "https://nicechatapp.netlify.app"
-  MONGODB_URL: ${{ secrets.MONGODB_URL }}
-  SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-  PORT: 8080
 
 jobs:
   deploy:
